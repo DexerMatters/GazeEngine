@@ -23,13 +23,13 @@ void gGroup::foreach(function<void(int i, gObject * obj)> const& func) {
 void gGroup::setX(double x) {
 		this->x = x;
 		this->foreach([=](int i, gObject* obj) {
-				obj->setX(x);
+				obj->setX(obj->getX()+x);
 				});
 };
 void gGroup::setY(double y) {
 		this->y = y;
 		this->foreach([=](int i, gObject* obj) {
-				obj->setY(y);
+				obj->setY(obj->getY() + y);
 				});
 };
 double gGroup::getX() {

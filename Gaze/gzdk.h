@@ -20,14 +20,7 @@
 #pragma comment(lib, "SOIL.lib")
 using namespace std;
 using namespace Gdiplus;
-struct gGameInfo {
-		string name;
-		string version;
-		string author;
-};
-struct gWindowInfo {
-		int x, y, width, height;
-};
+
 struct gv2 {
 		double x, y;
 };
@@ -40,6 +33,40 @@ struct gbmp {
 		int w, h, mode;
 		unsigned char* data;
 		long color;
+};
+
+enum {
+		AC_OUTPUT = 0xFF,
+		AC_WAIT = 0x00,
+		AC_MOVE_X = 0x01,
+		AC_MOVE_Y = 0x02,
+		AC_SPEED_X = 0x011,
+		AC_SPEED_Y = 0x022,
+		AC_SCALE_X = 0x03,
+		AC_SCALE_Y = 0x04,
+		AC_DISAPPEAR = 0x05,
+		AC_CLONE_OBJECT = 0x06,
+		AC_DESTROY_OBJECT = 0x07,
+		AC_DESTROY_GROUP = 0x08,
+		AC_MOVE_AS_FUNCTION = 0x09,
+		AC_CUSTOM = 0x10,
+		AC_GET_POS = 0x0A,
+		AC_GET_TIME = 0x0B,
+		AC_SPAWN_OBJECT = 0x0C,
+
+		LD_IMAGE = 0x00,
+		LD_SOUND = 0x01,
+		LD_TEXT = 0x02,
+		LD_VIDEO = 0x03,
+};
+
+struct gGameInfo {
+		string name;
+		string version;
+		string author;
+};
+struct gWindowInfo {
+		int x, y, width, height;
 };
 
 struct gItem;
@@ -77,7 +104,9 @@ private:
 		static vector<gPage*> pages;
 public:
 		gPage();
+		~gPage();
 		void putObject(gObject* obj);
+		void deleteObject(gObject* obj);
 		void popSession();
 		std::vector<gObject*> getAllObjects();
 		std::vector<gSession*> getAllSessions();
@@ -108,7 +137,9 @@ public:
 class gObject {
 private:
 		gvlm vlm;
+		gPage* page = NULL;
 		gTexture texture;
+		gAction* on_create;
 		double x, y;
 		string tag;
 		bool frozen = false;
@@ -116,6 +147,7 @@ public:
 		gObject();
 		gObject(int x, int y);
 		gObject(int x, int y, string tag);
+		~gObject();
 		void setX(double x);
 		void setY(double y);
 		double getX();
@@ -126,8 +158,11 @@ public:
 		gTexture getTexture();
 		void setTag(string tag);
 		string getTag();
+		void setOnCreateAction(gAction* action);
 		void setFrozen(bool b);
 		bool isFrozen();
+		void setOwnerPage(gPage* p);
+		gPage* getOwnerPage();
 		
 };
 class gRender {
@@ -185,7 +220,7 @@ public:
 };
 struct gItem {
 		long long goal;
-		long long start,end,action,isGroup,val1,val2,val3,val4;
+		long long start,end,action,val1,val2,val3,val4;
 		double db1, db2, db3, db4;
 		string str;
 };
@@ -196,54 +231,34 @@ private:
 		vector<gItem> items;
 		long long goal;
 		int isGroup;
+		int dur;
+		void putItems(gItem item);
 public:
-		
-		const static int OUTPUT = 0xFF;
-		const static int WAIT = 0x00;
-		const static int MOVE_X = 0x01;
-		const static int MOVE_Y = 0x02;
-		const static int SPEED_X = 0x011;
-		const static int SPEED_Y = 0x022;
-		const static int SCALE_X = 0x03;
-		const static int SCALE_Y = 0x04;
-
-		const static int DISAPPEAR = 0x05;
-		const static int CLONE_OBJECT = 0x06;
-		const static int DESTROY_OBJECT = 0x07;
-		const static int DESTROY_GROUP = 0x08;
-		const static int MOVE_AS_FUNCTION = 0x09;
-		const static int CUSTOM = 0x10;
-		const static int GET_POS = 0x0A;
-		const static int GET_TIME = 0x0B;
-		const static int SPAWN_OBJECT = 0x0C;
-
 		gAction();
-		
-		void offset(size_t duration);
-		void asFor(gObject* obj);
-		void asFors(gGroup* group);
-		void output(string str);
-		void speedX(double speed, int duration);
-		void speedY(double speed, int duration);
-		void scaleX(int speed, int duration);
-		void scaleY(int speed, int duration);
-		void moveX(int dx, int duration);
-		void moveY(int dy, int duration);
-		void moveAsFunc(function<gv2(size_t, gv2)> func, int duration);
-		void spawnObjects(gGroup* group, int count, gObject* temp, function<gv2(int, gv2)>);
-		void destroyObject(gObject* obj);
-		void destroyGroup(gGroup* group);
-		void cloneObject(gObject* obj, int x, int y);
+		~gAction();
+		gAction* then();
+		gAction* offset(size_t duration);
+		gAction* asFor(gObject* obj);
+		gAction* asFors(gGroup* group);
+		gAction* output(string str);
+		gAction* speedX(double speed, int duration);
+		gAction* speedY(double speed, int duration);
+		gAction* scaleX(int speed, int duration);
+		gAction* scaleY(int speed, int duration);
+		gAction* moveX(int dx, int duration);
+		gAction* moveY(int dy, int duration);
+		gAction* moveAsFunc(function<gv2(size_t, gv2)> func, int duration);
+		gAction* spawnObjects(gGroup*& group, int count, gObject* temp, function<gv2(int, gv2)>);
+		gAction* spawnObjects(gGroup*& group, int count, gObject* temp);
+		gAction* destroyObject(gObject* obj);
+		gAction* destroyGroup(gGroup* group);
+		gAction* cloneObject(gObject* obj, int x, int y);
 		std::vector<gItem> getItems();
 };
 class gLoader {
 private:
 		static std::map<std::string, long> stuff;
 public:
-		const static int IMAGE = 0x00;
-		const static int SOUND = 0x01;
-		const static int TEXT = 0x02;
-		const static int VIDEO = 0x03;
 		static void init();
 		static void load(string name, string path, int type);
 		static long get(string name);
@@ -254,6 +269,7 @@ private:
 		size_t time_total;
 		gAction* action;
 		gSession();
+		~gSession();
 public:
 		static gSession* newSession(function<gAction*(gAction*)> func);
 		gAction* getAction();

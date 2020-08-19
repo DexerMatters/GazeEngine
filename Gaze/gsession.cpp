@@ -1,5 +1,10 @@
 #include "gzdk.h"
-gSession::gSession() {};
+gSession::gSession() {}
+gSession::~gSession()
+{
+		delete action;
+}
+;
 gSession* gSession::newSession(function<gAction * (gAction*)> func) {
 		gSession* s = new gSession();
 		s->action = func(new gAction());

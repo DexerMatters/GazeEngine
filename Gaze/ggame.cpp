@@ -123,8 +123,67 @@ void gRender::Tick(int i) {
                     });
                 });
             });
+        vector<gObject*> objs = gPage::getShowingPage()->getAllObjects();
+
     }
     glutTimerFunc(10, gRender::Tick, 1);
+}
+void runActions(gAction* action, gPage* page, size_t& time) {
+    double ox = 0, oy = 0;
+    size_t time_rel = 0;
+    vector<gItem> its = action->getItems();
+    for (size_t i = 0; i < its.size(); i++) {
+        gObject* o = nullptr;
+        o = (gObject*)its[i].goal;
+
+        if (gRender::time >= its[i].start && gRender::time <= its[i].end) {
+            switch (its[i].action) {
+            case AC_OUTPUT:
+                gDebug(its[i].str);
+                break;
+            case AC_GET_POS:
+                ox = o->getX();
+                oy = o->getY();
+             break;
+            case AC_GET_TIME:
+                time_rel = gRender::time;
+                break;
+            case AC_SPEED_X:
+                o->setX(o->getX() + its[i].db1);
+                break;
+            case AC_SPEED_Y:
+                o->setY(o->getY() + its[i].db1);
+                break;
+            case AC_MOVE_X:
+                o->setX(o->getX() + its[i].val1 / (double)(its[i].end - its[i].start));
+                break;
+            case AC_MOVE_Y:
+                o->setY(o->getY() + its[i].val1 / (double)(its[i].end - its[i].start));
+            break;
+            case AC_MOVE_AS_FUNCTION: {
+                function<gv2(size_t, gv2)>* func = (function<gv2(size_t, gv2)>*) its[i].val1;
+                gv2 point = (*func)(gRender::time - time_rel, gv2{ ox,oy });
+                o->setX(point.x);
+                o->setY(point.y);
+                break;
+            };
+            case AC_SPAWN_OBJECT: {
+                gGroup* group = (gGroup*)its[i].val1;
+                function<gv2(int, gv2)>* func = (function<gv2(int, gv2)>*) its[i].val2;
+                group->foreach([&](int i, gObject* obj) {
+                    gv2 point = (*func)(i, gv2{ ox,oy });
+                    obj->setX(point.x);
+                    obj->setY(point.y);
+                    page->putObject(obj);
+                    });
+
+            }
+            default:
+                break;
+            }
+        }
+    }
+    time++;    
 }
 void gRender::Display() {
 		glClear(GL_COLOR_BUFFER_BIT);
@@ -150,72 +209,12 @@ void gRender::Display() {
         }
     }
 
-    vector<gObject*> objs = p->getAllObjects();
-    double ox = 0, oy = 0;
-    size_t time_rel = 0;
     if (gRender::time != (size_t)-1) {
-        vector<gItem> its = p->getAllSessions()[0]->getAction()->getItems();
-
-        for (size_t i = 0; i < its.size(); i++) {
-            gObject* o = nullptr;
-            gGroup* g = nullptr;
-            if (its[i].isGroup)
-                g = (gGroup*)its[i].goal;
-            o = (gObject*) its[i].goal;
-
-            if (gRender::time >= its[i].start && gRender::time <= its[i].end) {
-                switch (its[i].action) {
-                case gAction::OUTPUT:
-                    gDebug(its[i].str);
-                    break;
-                case gAction::GET_POS:
-                    if (its[i].isGroup) {
-                        ox = g->getX();
-                        oy = g->getY();
-                    }
-                    else {
-                        ox = o->getX();
-                        oy = o->getY();
-                    }
-                    break;
-                case gAction::GET_TIME:
-                    time_rel = gRender::time;
-                    break;
-                case gAction::SPEED_X:
-                    if (its[i].isGroup)
-                        g->setX(g->getX() + its[i].db1);
-                    else
-                        o->setX(o->getX() + its[i].db1);
-                    break;
-                case gAction::SPEED_Y:
-                    if (its[i].isGroup)
-                        g->setY(g->getY() + its[i].db1);
-                    else
-                        o->setY(o->getY() + its[i].db1);
-                    break;
-                case gAction::MOVE_X:
-                    o->setX(o->getX() + its[i].val1/(double)(its[i].end- its[i].start));
-                    break;
-                case gAction::MOVE_Y:
-                    o->setY(o->getY() + its[i].val1 / (double)(its[i].end - its[i].start));
-                    break;
-                case gAction::MOVE_AS_FUNCTION: {
-                    function<gv2(size_t, gv2)>* func =(function<gv2(size_t, gv2)>*) its[i].val1;
-                    gv2 point = (*func)(gRender::time - time_rel, gv2{ ox,oy });
-                    o->setX(point.x);
-                    o->setY(point.y);
-                    break;
-                };
-                default:
-                    break;
-                }
-            }
-        }
-        gRender::time++;
+        gAction* act = p->getAllSessions()[0]->getAction();
+        runActions(act, p, gRender::time);
     }
-
     
-
+    vector<gObject*> objs = p->getAllObjects();
     for (register size_t i = 0; i < objs.size(); i++) {
         register gObject* o = objs[i];
 

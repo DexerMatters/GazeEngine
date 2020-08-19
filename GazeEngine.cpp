@@ -10,10 +10,10 @@ int main(int argc, char* argv[])
     gStart(argc, 
         argv, 
         gGameInfo{ "DEMO","0.0.1","D" },
-        gWindowInfo{ 120, 120, 600, 600 },
+        gWindowInfo{ 120, 120, 800, 800 },
         []() {
             gLoader::init();
-            gLoader::load("a", "pen.png",gLoader::IMAGE);
+            gLoader::load("a", "pen.png",LD_IMAGE);
             gObject* obj;
             gObject* obj2;
             
@@ -28,27 +28,23 @@ int main(int argc, char* argv[])
                 gPage* p = new gPage();
                 p->putObject(obj);
                 p->putObject(obj2);
-
-                gSession* s = gSession::newSession([=](gAction* a)->gAction*{
+                gGroup* g;
+                gSession* s = gSession::newSession([&](gAction* a)->gAction*{
                     a->asFor(obj2);
-                    a->moveAsFunc([](size_t t, gv2 p)->gv2 {
-                        return { p.x + t*0.3,p.y+ t*0.5 };
-                        }, 500);
+                    a->moveX(100, 200);
+                    a->offset(100);
+                    a->spawnObjects(g, 5, obj, [](int i, gv2 v)->gv2 {
+                        return gv2{ v.x + i * 12,v.y + i * 12 + 20 };
+                        });
+                    a->asFors(g);
+                    a->offset(10);
+                    a->speedY(-0.5, 100);
                     return a;
                     });
                 
                 p->putSession(s);
                 p->startSession();
-                double** d = new double*[4];
-                double d0[4][2] = { {0,0},{0,60},{60,60},{60,0} };
-                for (int i = 0; i < 4; i++) {
-                    d[i] = new double[2];
-                    d[i][0] = d0[i][0];
-                    d[i][1] = d0[i][1];
-                }
-                gvlm v = {4,d};
-                obj->setVolume(v);
-                obj2->setVolume(v);
+                
                 });
 
             gOnTick([&](int v) {

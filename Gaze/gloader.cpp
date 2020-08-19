@@ -8,7 +8,7 @@ void gLoader::init() {
 };
 void gLoader::load(string name, string path, int type) {
 		switch (type) {
-		case IMAGE: {
+		case LD_IMAGE: {
 				
 				GdiplusStartupInput gdiplusstartupinput;
 				ULONG_PTR gdiplustoken;
@@ -28,7 +28,7 @@ void gLoader::load(string name, string path, int type) {
 
 				break;
 		}
-		case TEXT: {
+		case LD_TEXT: {
 
 		}
 		default:

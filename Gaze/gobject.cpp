@@ -12,6 +12,12 @@ gObject::gObject(int x, int y, string tag) {
 		this->y = y;
 		this->tag = tag;
 }
+gObject::~gObject()
+{
+		if (page != NULL)
+				page->deleteObject(this);
+		delete on_create;
+}
 void gObject::setX(double x) {
 		this->x = x;
 };
@@ -55,10 +61,24 @@ string gObject::getTag() {
 		return tag;
 }
 
+void gObject::setOnCreateAction(gAction* action)
+{
+		on_create = action;
+}
+
 void gObject::setFrozen(bool b) {
 		frozen = b;
 };
 bool gObject::isFrozen() {
 		return frozen;
-};
+}
+void gObject::setOwnerPage(gPage* p)
+{
+		page = p;
+}
+gPage* gObject::getOwnerPage()
+{
+		return page;
+}
+;
 
